@@ -182,39 +182,87 @@ const attacks = [
     // TODO: Replace with API call: POST /api/arena/room/:roomId/submit-attacks { tests: corruptorTestCases }
     handleRunJudgement()
   }, [addLog])
+const handleRunJudgement = useCallback(() => {
+  setBattleStatus('judging')
+  setPlayers(prev => ({
+    ...prev,
+    self: { ...prev.self, status: 'judging' },
+    opp:  { ...prev.opp,  status: 'judging' },
+  }))
+  addLog('referee', '🤖 AI Referee analyzing submissions…', '#a855f7')
 
-  const handleRunJudgement = useCallback(() => {
-    setBattleStatus('judging')
-    setPlayers(prev => ({
-      ...prev,
-      self: { ...prev.self, status: 'judging' },
-      opp:  { ...prev.opp,  status: 'judging' },
-    }))
-    addLog('referee', '🤖 AI Referee analyzing submissions…', '#a855f7')
+  setTimeout(async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/arena/judge', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          solverCode,
+          corruptorTests: corruptorTestCases,
+          problem,
+          roundNumber: currentRound,
+        }),
+      })
 
-    // TODO: Replace mock AI referee with NIM/Gemini/LLM judge endpoint
-    // POST /api/arena/:battleId/judge { solverCode, corruptorTests, roundNumber }
-    setTimeout(() => {
-      const decision = generateMockRefereeDecision(solverCode, corruptorTestCases, currentRound)
+      if (!response.ok) {
+        throw new Error('Failed to get referee decision')
+      }
+
+      const decision = await response.json()
+
       if (currentRound === 1) {
         setRefereeDecisions(prev => ({ ...prev, round1: decision }))
         setPlayers(prev => ({
           ...prev,
-          self: { ...prev.self, score: { ...prev.self.score, round1: decision.roundWinner === 'SOLVER' ? 1 : 0 } },
-          opp:  { ...prev.opp,  score: { ...prev.opp.score,  round1: decision.roundWinner === 'CORRUPTOR' ? 1 : 0 } },
+          self: {
+            ...prev.self,
+            score: {
+              ...prev.self.score,
+              round1: decision.roundWinner === 'SOLVER' ? 1 : 0,
+            },
+          },
+          opp: {
+            ...prev.opp,
+            score: {
+              ...prev.opp.score,
+              round1: decision.roundWinner === 'CORRUPTOR' ? 1 : 0,
+            },
+          },
         }))
       } else {
         setRefereeDecisions(prev => ({ ...prev, round2: decision }))
         setPlayers(prev => ({
           ...prev,
-          self: { ...prev.self, score: { ...prev.self.score, round2: decision.roundWinner === 'CORRUPTOR' ? 1 : 0 } },
-          opp:  { ...prev.opp,  score: { ...prev.opp.score,  round2: decision.roundWinner === 'SOLVER' ? 1 : 0 } },
+          self: {
+            ...prev.self,
+            score: {
+              ...prev.self.score,
+              round2: decision.roundWinner === 'CORRUPTOR' ? 1 : 0,
+            },
+          },
+          opp: {
+            ...prev.opp,
+            score: {
+              ...prev.opp.score,
+              round2: decision.roundWinner === 'SOLVER' ? 1 : 0,
+            },
+          },
         }))
       }
-      addLog('referee', `🏆 Round ${currentRound} winner: ${decision.roundWinner}`, decision.roundWinner === 'SOLVER' ? '#00f5ff' : '#ff3366')
-    }, 2200)
-  }, [solverCode, corruptorTestCases, currentRound, addLog])
 
+      addLog(
+        'referee',
+        `🏆 Round ${currentRound} winner: ${decision.roundWinner}`,
+        decision.roundWinner === 'SOLVER' ? '#00f5ff' : '#ff3366'
+      )
+    } catch (error) {
+      console.error('Referee judgement failed:', error)
+      addLog('referee', 'AI Referee failed to judge this round', '#ff3366')
+    }
+  }, 2200)
+}, [solverCode, corruptorTestCases, currentRound, addLog])
   const handleRoleSwitch = useCallback(() => {
     // TODO: Replace with Socket.IO emit: socket.emit('round:switch', { roomId })
     setCurrentRound(2)
