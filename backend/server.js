@@ -2,7 +2,7 @@ const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
 const cors = require("cors");
-
+const arenaSocket = require('./socket/arenaSocket')
 const app = express();
 
 app.use(cors({
@@ -26,8 +26,9 @@ const io = new Server(server, {
 const players = {};
 
 io.on("connection", (socket) => {
+  
   console.log("User connected:", socket.id);
-
+  arenaSocket(io, socket)
   socket.on("join_world", (player) => {
     players[socket.id] = {
       id: socket.id,

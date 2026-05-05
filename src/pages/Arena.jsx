@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-
+import useArenaSocket from '../hooks/useArenaSocket'
 import styles from './Arena.module.css'
-
+import { socket } from '../socket'
 import ArenaHeader from '../components/arena/ArenaHeader'
 import BattleLobby from '../components/arena/BattleLobby'
 import PlayerDuelCards from '../components/arena/PlayerDuelCards'
@@ -275,11 +275,59 @@ const attacks = [
 // ─── Arena Page ───────────────────────────────────────────────────────────────
 export default function Arena() {
   const state = useArenaBattleState()
-  const { battleStatus, currentRound, currentUserRole } = state
-  const isActive   = ['active', 'judging', 'round2'].includes(battleStatus)
-  const isJudging  = battleStatus === 'judging'
+  const arenaSocket = useArenaSocket()
+
+  const {
+    battleStatus,
+    currentRound,
+    currentUserRole,
+  } = state
+
+  const socketRoom = arenaSocket.room
+  const socketPlayers = socketRoom?.players || null
+
+  const me = socketPlayers ? socketPlayers[socket.id] : null
+
+  const opponent = socketPlayers
+    ? Object.values(socketPlayers).find((p) => p.id !== socket.id)
+    : null
+
+  const actualUserRole = me?.role || currentUserRole
+
+  const displayedPlayers = socketPlayers
+    ? {
+        self: {
+          ...state.players.self,
+          id: me?.id || state.players.self.id,
+          name: me?.name || state.players.self.name,
+          role: me?.role || state.players.self.role,
+          status: me?.role === 'solver' ? 'coding' : 'attacking',
+          score: {
+            round1: me?.score ?? 0,
+            round2: null,
+          },
+          color: me?.role === 'solver' ? '#00f5ff' : '#ff3366',
+        },
+        opp: {
+          ...state.players.opp,
+          id: opponent?.id || state.players.opp.id,
+          name: opponent?.name || state.players.opp.name,
+          role: opponent?.role || state.players.opp.role,
+          status: opponent?.role === 'solver' ? 'coding' : 'attacking',
+          score: {
+            round1: opponent?.score ?? 0,
+            round2: null,
+          },
+          color: opponent?.role === 'solver' ? '#00f5ff' : '#ff3366',
+        },
+      }
+    : state.players
+
+  const isActive = ['active', 'judging', 'round2'].includes(battleStatus)
+  const isJudging = battleStatus === 'judging'
   const isComplete = battleStatus === 'completed'
-  const showRoleSwitch = isJudging && currentRound === 1 && state.refereeDecisions.round1
+  const showRoleSwitch =
+    isJudging && currentRound === 1 && state.refereeDecisions.round1
 
   return (
     <div className={styles.page}>
@@ -287,19 +335,20 @@ export default function Arena() {
 
       <ArenaHeader battleStatus={battleStatus} currentRound={currentRound} />
 
-      {/* Lobby / Matching */}
       {(battleStatus === 'lobby' || battleStatus === 'matching') && (
         <BattleLobby
           battleStatus={battleStatus}
           selectedDifficulty={state.selectedDifficulty}
           queueTime={state.queueTime}
           onSelectDifficulty={state.setSelectedDifficulty}
-          onJoinQueue={state.handleJoinQueue}
+          onJoinQueue={() => {
+            state.handleJoinQueue()
+            arenaSocket.joinArenaQueue(`Cipher_${socket.id?.slice(0, 4) || '0000'}`)
+          }}
           onStartBattle={state.handleStartBattle}
         />
       )}
 
-      {/* Active battle layout */}
       <AnimatePresence>
         {isActive && (
           <motion.div
@@ -308,24 +357,25 @@ export default function Arena() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            {/* Top row: players + phase tracker */}
             <div className={styles.battleTop}>
-              <PlayerDuelCards players={state.players} currentRound={currentRound} />
-              <BattlePhaseTracker battleStatus={battleStatus} currentRound={currentRound} />
+              <PlayerDuelCards
+                players={displayedPlayers}
+                currentRound={currentRound}
+              />
+              <BattlePhaseTracker
+                battleStatus={battleStatus}
+                currentRound={currentRound}
+              />
             </div>
 
-            {/* Main battle area */}
             <div className={styles.battleMain}>
-              {/* Left: problem + activity */}
               <div className={styles.battleLeft}>
                 {state.problem && <ProblemBrief problem={state.problem} />}
                 <ArenaActivityFeed log={state.battleLog} />
               </div>
 
-              {/* Right: workspace */}
               <div className={styles.battleRight}>
-                {/* Solver or corruptor workspace based on role */}
-                {currentUserRole === 'solver' ? (
+                {actualUserRole === 'solver' ? (
                   <SolverWorkspace
                     solverCode={state.solverCode}
                     battleStatus={battleStatus}
@@ -342,7 +392,6 @@ export default function Arena() {
                   />
                 )}
 
-                {/* Referee panel — shown while judging */}
                 <AnimatePresence>
                   {isJudging && (
                     <RefereePanel
@@ -353,11 +402,10 @@ export default function Arena() {
                   )}
                 </AnimatePresence>
 
-                {/* Role switch after round 1 judging */}
                 <AnimatePresence>
                   {showRoleSwitch && (
                     <RoundSwitchPanel
-                      players={state.players}
+                      players={displayedPlayers}
                       round1Decision={state.refereeDecisions.round1}
                       onContinue={state.handleRoleSwitch}
                     />
@@ -369,27 +417,30 @@ export default function Arena() {
         )}
       </AnimatePresence>
 
-      {/* Final scoreboard */}
       <AnimatePresence>
         {isComplete && state.finalScore && (
           <BattleScoreboard
             finalScore={state.finalScore}
-            players={state.players}
+            players={displayedPlayers}
             refereeDecisions={state.refereeDecisions}
             onNewBattle={() => window.location.reload()}
           />
         )}
       </AnimatePresence>
 
-      {/* Round 2 judging */}
       <AnimatePresence>
-        {battleStatus === 'judging' && currentRound === 2 && state.refereeDecisions.round2 && (
-          <div className={styles.finishRow}>
-            <button className={styles.finishBtn} onClick={state.handleFinishBattle}>
-              VIEW FINAL RESULTS
-            </button>
-          </div>
-        )}
+        {battleStatus === 'judging' &&
+          currentRound === 2 &&
+          state.refereeDecisions.round2 && (
+            <div className={styles.finishRow}>
+              <button
+                className={styles.finishBtn}
+                onClick={state.handleFinishBattle}
+              >
+                VIEW FINAL RESULTS
+              </button>
+            </div>
+          )}
       </AnimatePresence>
     </div>
   )
