@@ -54,6 +54,45 @@ export const QUESTS = [
     completed: false,
     featured: true,
     worldZone: 'DIGITAL_VOID',
+    statement: `Given the root of a binary tree, return the values visited in DFS preorder traversal.`,
+inputFormat: `Input is a binary tree represented as an array.`,
+outputFormat: `Return an array of node values in preorder.`,
+starterCode: `function solve(root) {
+  // Write your code here
+}`,
+testCases: [
+  {
+    input: '[1,null,2,3]',
+    expectedOutput: '[1,2,3]'
+  },
+  {
+    input: '[]',
+    expectedOutput: '[]'
+  }
+],
+examples: [
+  {
+    input: '[1,null,2,3]',
+    output: '[1,2,3]'
+  }
+],
+
+constraints: [
+  '1 <= n <= 10^4'
+],
+
+languageTemplates: {
+  javascript: `function solve(root) {
+
+}`,
+  cpp: `class Solution {
+public:
+
+};`,
+  java: `class Solution {
+
+}`
+}
   },
   {
     id: 'q2',
@@ -72,6 +111,29 @@ export const QUESTS = [
     completed: true,
     featured: true,
     worldZone: 'NEON_UNDERCITY',
+    examples: [
+  {
+    input: '[1,null,2,3]',
+    output: '[1,2,3]'
+  }
+],
+
+constraints: [
+  '1 <= n <= 10^4'
+],
+
+languageTemplates: {
+  javascript: `function solve(root) {
+
+}`,
+  cpp: `class Solution {
+public:
+
+};`,
+  java: `class Solution {
+
+}`
+}
   },
   {
     id: 'q3',
@@ -90,6 +152,29 @@ export const QUESTS = [
     completed: false,
     featured: false,
     worldZone: 'GHOST_PROTOCOL',
+    examples: [
+  {
+    input: '[1,null,2,3]',
+    output: '[1,2,3]'
+  }
+],
+
+constraints: [
+  '1 <= n <= 10^4'
+],
+
+languageTemplates: {
+  javascript: `function solve(root) {
+
+}`,
+  cpp: `class Solution {
+public:
+
+};`,
+  java: `class Solution {
+
+}`
+}
   },
   {
     id: 'q4',
@@ -108,6 +193,29 @@ export const QUESTS = [
     completed: true,
     featured: false,
     worldZone: 'DIGITAL_VOID',
+    examples: [
+  {
+    input: '[1,null,2,3]',
+    output: '[1,2,3]'
+  }
+],
+
+constraints: [
+  '1 <= n <= 10^4'
+],
+
+languageTemplates: {
+  javascript: `function solve(root) {
+
+}`,
+  cpp: `class Solution {
+public:
+
+};`,
+  java: `class Solution {
+
+}`
+}
   },
   {
     id: 'q5',
@@ -126,6 +234,29 @@ export const QUESTS = [
     completed: false,
     featured: true,
     worldZone: 'QUANTUM_RIFT',
+    examples: [
+  {
+    input: '[1,null,2,3]',
+    output: '[1,2,3]'
+  }
+],
+
+constraints: [
+  '1 <= n <= 10^4'
+],
+
+languageTemplates: {
+  javascript: `function solve(root) {
+
+}`,
+  cpp: `class Solution {
+public:
+
+};`,
+  java: `class Solution {
+
+}`
+}
   },
   {
     id: 'q6',
@@ -144,6 +275,29 @@ export const QUESTS = [
     completed: true,
     featured: false,
     worldZone: 'NEON_UNDERCITY',
+    examples: [
+  {
+    input: '[1,null,2,3]',
+    output: '[1,2,3]'
+  }
+],
+
+constraints: [
+  '1 <= n <= 10^4'
+],
+
+languageTemplates: {
+  javascript: `function solve(root) {
+
+}`,
+  cpp: `class Solution {
+public:
+
+};`,
+  java: `class Solution {
+
+}`
+}
   },
 ]
 
@@ -162,6 +316,7 @@ export const WORLD_ZONES = [
     bossName: 'THE NULL ENTITY',
     bossDefeated: false,
     coordinates: { x: 50, y: 50 },
+    
   },
   {
     id: 'z2',

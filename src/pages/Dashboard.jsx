@@ -1,12 +1,14 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Swords, Trophy, Flame, Target, Zap, Shield, Clock } from 'lucide-react'
 import StatCard from '../components/StatCard'
 import QuestCard from '../components/QuestCard'
 import MissionModal from '../components/MissionModal'
-import { PLAYER, QUESTS, DAILY_CHALLENGES, LEADERBOARD } from '../data/mockData'
+import { QUESTS, DAILY_CHALLENGES, LEADERBOARD } from '../data/mockData'
 import styles from './Dashboard.module.css'
-
+import { auth, db } from '../firebase'
+import { doc, getDoc, setDoc } from 'firebase/firestore'
+import { onAuthStateChanged } from 'firebase/auth'
 const container = {
   hidden: { opacity: 0 },
   show: { opacity: 1, transition: { staggerChildren: 0.07 } }
@@ -18,9 +20,8 @@ const item = {
 
 export default function Dashboard({ showReward }) {
   const [selectedQuest, setSelectedQuest] = useState(null)
-  const xpPercent = Math.round((PLAYER.xp / PLAYER.xpToNext) * 100)
-  const featured = QUESTS.filter(q => q.featured).slice(0, 3)
-  const topPlayers = LEADERBOARD.slice(0, 5)
+  const [player, setPlayer] = useState(null)
+
 
   const handleStart = (quest) => {
     setSelectedQuest(null)
@@ -32,7 +33,73 @@ export default function Dashboard({ showReward }) {
       fragments: quest.fragmentReward,
     })
   }
+  useEffect(() => {
+  const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      console.log('No logged-in user')
+      return
+    }
 
+    console.log('Logged in user:', user.uid)
+
+    const userRef = doc(db, 'users', user.uid)
+    const userSnap = await getDoc(userRef)
+
+    if (userSnap.exists()) {
+      const data = userSnap.data()
+
+      setPlayer({
+        ...data,
+        stats: {
+          problemsSolved: data.completedQuests?.length || 0,
+          winRate: 0,
+          arenaWins: 0,
+          accuracy: 0,
+          avgSpeed: 'N/A',
+        }
+      })
+    }   else {
+  const newPlayer = {
+    uid: user.uid,
+    email: user.email,
+    username: user.email.split('@')[0],
+
+    level: 1,
+    xp: 0,
+    xpToNext: 1000,
+
+    coins: 0,
+    fragments: 0,
+    streak: 0,
+
+    rank: 'INITIATE',
+    faction: 'VOID SYNDICATE',
+
+    completedQuests: [],
+    createdAt: new Date().toISOString(),
+
+    stats: {
+      problemsSolved: 0,
+      winRate: 0,
+      arenaWins: 0,
+      accuracy: 0,
+      avgSpeed: 'N/A',
+    }
+  }
+
+  await setDoc(userRef, newPlayer)
+  setPlayer(newPlayer)
+}
+  })
+
+  return () => unsubscribe()
+}, [])
+if (!player) {
+  return <div style={{ padding: 40, color: 'white' }}>Loading player...</div>
+}
+  const xpPercent = Math.round((player.xp / player.xpToNext) * 100)
+  const featured = QUESTS.filter(q => q.featured).slice(0, 3)
+  const topPlayers = LEADERBOARD.slice(0, 5)
   return (
     <div className={styles.page}>
       {/* Hero banner */}
@@ -45,22 +112,22 @@ export default function Dashboard({ showReward }) {
         <div className={styles.heroContent}>
           <div className={styles.heroGreet}>WELCOME BACK, OPERATIVE</div>
           <h1 className={styles.heroTitle}>
-            <span className={styles.heroName}>{PLAYER.username}</span>
+            <span className={styles.heroName}>{player.username}</span>
           </h1>
           <div className={styles.heroSub}>
-            <span className={styles.rankBadge}>{PLAYER.rank}</span>
+            <span className={styles.rankBadge}>{player.rank}</span>
             <span className={styles.separator}>·</span>
-            <span>{PLAYER.faction}</span>
+            <span>{player.faction}</span>
             <span className={styles.separator}>·</span>
             <Flame size={12} style={{ color: '#ff9500' }} />
-            <span>{PLAYER.streak} day streak</span>
+            <span>{player.streak} day streak</span>
           </div>
 
           {/* XP Bar */}
           <div className={styles.xpSection}>
             <div className={styles.xpLabels}>
-              <span>LEVEL {PLAYER.level}</span>
-              <span>{PLAYER.xp.toLocaleString()} / {PLAYER.xpToNext.toLocaleString()} XP</span>
+              <span>LEVEL {player.level}</span>
+              <span>{player.xp.toLocaleString()} / {player.xpToNext.toLocaleString()} XP</span>
             </div>
             <div className={styles.xpTrack}>
               <motion.div
@@ -71,7 +138,7 @@ export default function Dashboard({ showReward }) {
               />
               <div className={styles.xpGlow} style={{ left: `${xpPercent}%` }} />
             </div>
-            <div className={styles.xpNext}>{xpPercent}% TO LEVEL {PLAYER.level + 1}</div>
+            <div className={styles.xpNext}>{xpPercent}% TO LEVEL {player.level + 1}</div>
           </div>
         </div>
 
@@ -94,16 +161,16 @@ export default function Dashboard({ showReward }) {
         animate="show"
       >
         <motion.div variants={item}>
-          <StatCard label="PROBLEMS SOLVED" value={PLAYER.stats.problemsSolved} sub="All time" icon={Target} color="#00f5ff" trend={12} />
+          <StatCard label="PROBLEMS SOLVED" value={player.stats.problemsSolved} sub="All time" icon={Target} color="#00f5ff" trend={12} />
         </motion.div>
         <motion.div variants={item}>
-          <StatCard label="ARENA WIN RATE" value={`${PLAYER.stats.winRate}%`} sub={`${PLAYER.stats.arenaWins} wins`} icon={Swords} color="#a855f7" trend={5} />
+          <StatCard label="ARENA WIN RATE" value={`${player.stats.winRate}%`} sub={`${player.stats.arenaWins} wins`} icon={Swords} color="#a855f7" trend={5} />
         </motion.div>
         <motion.div variants={item}>
-          <StatCard label="ACCURACY" value={`${PLAYER.stats.accuracy}%`} sub="Last 30 days" icon={Shield} color="#00ff88" trend={-2} />
+          <StatCard label="ACCURACY" value={`${player.stats.accuracy}%`} sub="Last 30 days" icon={Shield} color="#00ff88" trend={-2} />
         </motion.div>
         <motion.div variants={item}>
-          <StatCard label="AVG SOLVE TIME" value={PLAYER.stats.avgSpeed} sub="Per problem" icon={Clock} color="#ff9500" />
+          <StatCard label="AVG SOLVE TIME" value={player.stats.avgSpeed} sub="Per problem" icon={Clock} color="#ff9500" />
         </motion.div>
       </motion.div>
 

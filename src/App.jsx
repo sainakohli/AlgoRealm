@@ -10,7 +10,10 @@ import Leaderboard from './pages/Leaderboard'
 import Profile from './pages/Profile'
 import RewardPopup from './components/RewardPopup'
 import { socket } from './socket'
+import ChallengePage from './pages/ChallengePage'
 import WorldSocketTest from './pages/WorldSocketTest'
+import Login from './pages/Login'
+import Register from './pages/Register'
 export default function App() {
   const [reward, setReward] = useState(null)
 
@@ -39,9 +42,12 @@ export default function App() {
         <Routes>
           <Route path="/socket-test" element={<WorldSocketTest />} />
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
           <Route path="/dashboard" element={<Dashboard showReward={showReward} />} />
           <Route path="/world" element={<World showReward={showReward} />} />
           <Route path="/practice" element={<Practice showReward={showReward} />} />
+          <Route path="/practice/:questId" element={<ChallengePage showReward={showReward} />} />
           <Route path="/arena" element={<Arena showReward={showReward} />} />
           <Route path="/heist" element={<Heist showReward={showReward} />} />
           <Route path="/leaderboard" element={<Leaderboard />} />

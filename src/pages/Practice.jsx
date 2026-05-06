@@ -5,17 +5,25 @@ import { QUESTS, PRACTICE_TOPICS } from '../data/mockData'
 import QuestCard from '../components/QuestCard'
 import MissionModal from '../components/MissionModal'
 import styles from './Practice.module.css'
-
+import { useNavigate } from 'react-router-dom'
 const DIFFICULTIES = ['ALL', 'EASY', 'MEDIUM', 'HARD', 'EXTREME']
 const TYPES = ['ALL', 'ALGORITHM', 'DATA_STRUCTURE', 'GRAPH', 'RECURSION', 'ADVANCED']
-
 export default function Practice({ showReward }) {
+  const navigate = useNavigate()
+
   const [search, setSearch] = useState('')
   const [difficulty, setDifficulty] = useState('ALL')
   const [type, setType] = useState('ALL')
   const [selectedQuest, setSelectedQuest] = useState(null)
 
-  const filtered = QUESTS.filter(q => {
+  const solvedQuests = JSON.parse(localStorage.getItem('solvedQuests') || '[]')
+
+const updatedQuests = QUESTS.map(q => ({
+  ...q,
+  completed: solvedQuests.includes(q.id)
+}))
+
+const filtered = updatedQuests.filter(q => {
     const matchSearch = q.title.toLowerCase().includes(search.toLowerCase()) ||
       q.tags.some(t => t.toLowerCase().includes(search.toLowerCase()))
     const matchDiff = difficulty === 'ALL' || q.difficulty === difficulty
@@ -23,15 +31,10 @@ export default function Practice({ showReward }) {
     return matchSearch && matchDiff && matchType
   })
 
-  const handleStart = (quest) => {
-    setSelectedQuest(null)
-    showReward?.({
-      title: 'PRACTICE SESSION',
-      subtitle: quest.title,
-      xp: Math.floor(quest.xpReward * 0.5),
-      coins: Math.floor(quest.coinReward * 0.5),
-    })
-  }
+const handleStart = (quest) => {
+  setSelectedQuest(null)
+  navigate(`/practice/${quest.id}`)
+}
 
   return (
     <div className={styles.page}>
@@ -42,7 +45,7 @@ export default function Practice({ showReward }) {
         </div>
         <div className={styles.headerStats}>
           <div className={styles.headerStat}>
-            <span className={styles.headerStatVal}>{QUESTS.filter(q => q.completed).length}</span>
+            <span className={styles.headerStatVal}>{updatedQuests.filter(q => q.completed).length}</span>
             <span className={styles.headerStatLabel}>SOLVED</span>
           </div>
           <div className={styles.divider} />
