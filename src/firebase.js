@@ -6,12 +6,12 @@ import { getAuth } from 'firebase/auth'
 import { getFirestore } from 'firebase/firestore'
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyAauWm-v7xXXDcJQjT5SsAu7VhpXJPOTY8",
-  authDomain: "algorealm-e2020.firebaseapp.com",
-  projectId: "algorealm-e2020",
-  storageBucket: "algorealm-e2020.firebasestorage.app",
-  messagingSenderId: "458119179551",
-  appId: "1:458119179551:web:0ba3f6e1a00b2f844c942a"
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_AUTH_DOMAIN",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_STORAGE_BUCKET",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
 };
 
 // Initialize Firebase
